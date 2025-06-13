@@ -5,7 +5,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class VerifyUserResponse {
+public class RegisterUserRequest {
     private String email;
-    private String verificationCode;
+    private String password;
+    private String username;
 }

@@ -1,8 +1,8 @@
 package com.notorify.notorifyapi.Service;
 
-import com.notorify.notorifyapi.DTO.LoginUserResponse;
-import com.notorify.notorifyapi.DTO.RegisterUserResponse;
-import com.notorify.notorifyapi.DTO.VerifyUserResponse;
+import com.notorify.notorifyapi.DTO.LoginUserRequest;
+import com.notorify.notorifyapi.DTO.RegisterUserRequest;
+import com.notorify.notorifyapi.DTO.VerifyUserRequest;
 import com.notorify.notorifyapi.Model.User;
 import com.notorify.notorifyapi.Repository.UserRepository;
 import jakarta.mail.MessagingException;
@@ -26,42 +26,42 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public User signup(RegisterUserResponse response) {
+    public User signup(RegisterUserRequest request) {
         User user = User.builder()
-                .username(response.getUsername())
-                .email(response.getEmail())
-                .password(passwordEncoder.encode(response.getPassword()))
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .verificationCode(generateVerificationCode())
+                .verificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15))
+                .enabled(false)
                 .build();
 
-        user.setVerificationCode(generateVerificationCode());
-        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(30));
-        user.setEnabled(false);
         sendVerificationEmail(user);
         return userRepository.save(user);
     }
 
     @Override
-    public User authenticate(LoginUserResponse response) {
-        User user = userRepository.findByEmail(response.getEmail())
+    public User authenticate(LoginUserRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User Not Found"));
 
         if(!user.isEnabled()) {
             throw new RuntimeException("Account not verified. Please verify account.");
         }
 
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(response.getEmail(), response.getPassword()));
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
         return user;
     }
 
     @Override
-    public void verifyUser(VerifyUserResponse response) {
-        Optional<User> optionalUser = userRepository.findByEmail(response.getEmail());
+    public void verifyUser(VerifyUserRequest request) {
+        Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
         if(optionalUser.isPresent()) {
             User user = optionalUser.get();
             if(user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
                 throw new RuntimeException("Verification code expired. Please verify account.");
             }
-            if(user.getVerificationCode().equals(response.getVerificationCode())) {
+            if(user.getVerificationCode().equals(request.getVerificationCode())) {
                 user.setEnabled(true);
                 //set verification code to null after verifiying account
                 user.setVerificationCode(null);

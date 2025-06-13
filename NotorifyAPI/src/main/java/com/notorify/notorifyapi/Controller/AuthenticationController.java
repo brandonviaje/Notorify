@@ -1,9 +1,9 @@
 package com.notorify.notorifyapi.Controller;
 
 import com.notorify.notorifyapi.DTO.LoginResponse;
-import com.notorify.notorifyapi.DTO.LoginUserResponse;
-import com.notorify.notorifyapi.DTO.RegisterUserResponse;
-import com.notorify.notorifyapi.DTO.VerifyUserResponse;
+import com.notorify.notorifyapi.DTO.LoginUserRequest;
+import com.notorify.notorifyapi.DTO.RegisterUserRequest;
+import com.notorify.notorifyapi.DTO.VerifyUserRequest;
 import com.notorify.notorifyapi.Model.User;
 import com.notorify.notorifyapi.Service.AuthenticationService;
 import com.notorify.notorifyapi.Service.JwtService;
@@ -20,23 +20,23 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
 
     @PostMapping("/signup")
-    public ResponseEntity<User> register(@RequestBody RegisterUserResponse response){
-        User registeredUser = authenticationService.signup(response);
+    public ResponseEntity<User> register(@RequestBody RegisterUserRequest request){
+        User registeredUser = authenticationService.signup(request);
         return ResponseEntity.ok(registeredUser);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginUserResponse response){
-        User authenticatedUser = authenticationService.authenticate(response);
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginUserRequest request){
+        User authenticatedUser = authenticationService.authenticate(request);
         String jwtToken = jwtService.generateToken(authenticatedUser);
         LoginResponse loginResponse = new LoginResponse(jwtToken,jwtService.getExpirationTime());
         return ResponseEntity.ok(loginResponse);
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<?> verifyUser(@RequestBody VerifyUserResponse response){
+    public ResponseEntity<?> verifyUser(@RequestBody VerifyUserRequest request){
         try{
-            authenticationService.verifyUser(response);
+            authenticationService.verifyUser(request);
             return ResponseEntity.ok("Account verified successfully.");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
